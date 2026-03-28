@@ -46,13 +46,44 @@
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         .saving-indicator { position: fixed; top: 20px; right: 20px; background: #2c2a29; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .empty-articles { text-align: center; padding: 3rem; color: #aa947c; background: #fefcf8; border-radius: 1.5rem; border: 1px dashed #e4d9ce; }
-        .debug-info { position: fixed; bottom: 10px; right: 10px; background: #f0f0f0; border-radius: 8px; padding: 4px 8px; font-size: 10px; color: #666; cursor: pointer; opacity: 0.6; }
+        
+        /* 日志面板样式 */
+        .log-panel { position: fixed; bottom: 20px; right: 20px; width: 400px; max-width: 90vw; background: #1e1e1e; color: #d4d4d4; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1001; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; transition: all 0.3s; }
+        .log-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #2d2d2d; border-radius: 12px 12px 0 0; cursor: pointer; border-bottom: 1px solid #3d3d3d; }
+        .log-header h3 { font-size: 13px; font-weight: 600; margin: 0; color: #fff; }
+        .log-controls { display: flex; gap: 8px; }
+        .log-controls button { background: #3d3d3d; color: #fff; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .log-controls button:hover { background: #4d4d4d; }
+        .log-content { max-height: 300px; overflow-y: auto; padding: 8px 12px; font-size: 11px; line-height: 1.5; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #2d2d2d; font-family: monospace; }
+        .log-entry.info { color: #9cdcfe; }
+        .log-entry.success { color: #6a9955; }
+        .log-entry.error { color: #f48771; }
+        .log-entry.warning { color: #dcdcaa; }
+        .log-time { color: #858585; margin-right: 8px; }
+        .log-panel.collapsed .log-content { display: none; }
+        
+        /* Token 检测模态框 */
+        .token-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .token-modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 450px; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .token-modal h3 { margin-bottom: 16px; color: #3e2c21; }
+        .token-modal input { width: 100%; padding: 12px; border: 1px solid #e4d9ce; border-radius: 8px; font-size: 14px; font-family: monospace; margin-bottom: 12px; }
+        .token-modal textarea { width: 100%; padding: 12px; border: 1px solid #e4d9ce; border-radius: 8px; font-size: 12px; font-family: monospace; margin-bottom: 12px; resize: vertical; background: #f8f8f8; }
+        .token-modal-buttons { display: flex; gap: 12px; justify-content: flex-end; }
+        .token-modal button { padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #2c2a29; color: white; border: none; }
+        .btn-secondary { background: #f0eae2; color: #5a3f28; border: none; }
+        .test-status { margin: 12px 0; padding: 8px; border-radius: 8px; font-size: 12px; }
+        .test-status.success { background: #e8f5e9; color: #2e7d32; }
+        .test-status.error { background: #ffebee; color: #c62828; }
+        .test-status.loading { background: #fff3e0; color: #ef6c00; }
     </style>
 </head>
 <body>
 <div class="blog-wrapper">
     <div class="admin-bar" id="adminBar">
         <button class="admin-btn" id="masterControlBtn">🔐 管理员登录</button>
+        <button class="admin-btn" id="showLogBtn" style="background: #7f5e3c;">📋 查看日志</button>
     </div>
     <div class="blog-content" id="blogRoot">
         <div class="loading">加载中...</div>
@@ -60,7 +91,6 @@
     <footer>© 林间集 · 数据存储于 GitHub 仓库</footer>
 </div>
 <div id="savingIndicator" class="saving-indicator">保存中...</div>
-<div class="debug-info" id="debugInfo">🔧 点击查看调试信息</div>
 
 <script>
     // ==================== GitHub 配置 ====================
@@ -77,6 +107,177 @@
     let githubToken = null;
     let isSaving = false;
 
+    // 日志系统
+    let logs = [];
+    
+    function addLog(message, type = 'info') {
+        const time = new Date().toLocaleTimeString();
+        logs.unshift({ time, message, type });
+        if (logs.length > 200) logs.pop();
+        updateLogPanel();
+        console.log(`[${type}]`, message);
+    }
+
+    function updateLogPanel() {
+        const panel = document.getElementById('logPanel');
+        if (!panel) return;
+        const content = panel.querySelector('.log-content');
+        if (content) {
+            content.innerHTML = logs.map(log => `
+                <div class="log-entry ${log.type}">
+                    <span class="log-time">[${log.time}]</span>
+                    <span>${escapeHtml(log.message)}</span>
+                </div>
+            `).join('') || '<div style="color:#666; text-align:center; padding:20px;">暂无日志</div>';
+        }
+    }
+
+    function showLogPanel() {
+        let panel = document.getElementById('logPanel');
+        if (panel) {
+            panel.classList.toggle('collapsed');
+            return;
+        }
+        panel = document.createElement('div');
+        panel.id = 'logPanel';
+        panel.className = 'log-panel';
+        panel.innerHTML = `
+            <div class="log-header">
+                <h3>📋 操作日志</h3>
+                <div class="log-controls">
+                    <button id="clearLogBtn">清空</button>
+                    <button id="closeLogBtn">收起</button>
+                </div>
+            </div>
+            <div class="log-content"></div>
+        `;
+        document.body.appendChild(panel);
+        updateLogPanel();
+        document.getElementById('clearLogBtn')?.addEventListener('click', () => {
+            logs = [];
+            updateLogPanel();
+            addLog('日志已清空', 'info');
+        });
+        document.getElementById('closeLogBtn')?.addEventListener('click', () => {
+            panel.remove();
+        });
+    }
+
+    // Token 检测函数
+    async function testGitHubToken(token) {
+        addLog('正在验证 GitHub Token...', 'info');
+        try {
+            const res = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                addLog(`✅ Token 验证成功！用户名: ${user.login}`, 'success');
+                // 进一步测试仓库权限
+                const repoTest = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (repoTest.ok) {
+                    addLog(`✅ 仓库 ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo} 访问正常`, 'success');
+                    return { valid: true, user: user.login };
+                } else if (repoTest.status === 404) {
+                    addLog(`⚠️ 仓库不存在或无法访问: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, 'warning');
+                    return { valid: true, user: user.login, repoWarning: true };
+                } else {
+                    addLog(`⚠️ 仓库访问状态: ${repoTest.status}`, 'warning');
+                    return { valid: true, user: user.login };
+                }
+            } else {
+                const error = await res.json();
+                addLog(`❌ Token 无效: ${error.message || `HTTP ${res.status}`}`, 'error');
+                return { valid: false, error: error.message };
+            }
+        } catch (err) {
+            addLog(`❌ 网络错误: ${err.message}`, 'error');
+            return { valid: false, error: err.message };
+        }
+    }
+
+    // Token 输入模态框（带检测功能）
+    async function showTokenInputModal() {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'token-modal';
+            modal.innerHTML = `
+                <div class="token-modal-content">
+                    <h3>🔧 GitHub Personal Access Token</h3>
+                    <p style="font-size:12px; color:#666; margin-bottom:12px;">
+                        需要 <strong>repo</strong> 权限。获取地址: 
+                        <a href="https://github.com/settings/tokens" target="_blank" style="color:#c7a66b;">github.com/settings/tokens</a>
+                    </p>
+                    <input type="password" id="tokenInput" placeholder="粘贴你的 GitHub Token" autocomplete="off">
+                    <div id="testStatus" class="test-status" style="display:none;"></div>
+                    <textarea id="tokenHelp" rows="3" placeholder="或者粘贴 Token 在这里（会自动去除空格和换行）" style="display:none;"></textarea>
+                    <div class="token-modal-buttons">
+                        <button id="testTokenBtn" class="btn-secondary">🔍 检测 Token</button>
+                        <button id="cancelTokenBtn" class="btn-secondary">取消</button>
+                        <button id="confirmTokenBtn" class="btn-primary">确认使用</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const input = modal.querySelector('#tokenInput');
+            const testStatus = modal.querySelector('#testStatus');
+            const testBtn = modal.querySelector('#testTokenBtn');
+            const confirmBtn = modal.querySelector('#confirmTokenBtn');
+            const cancelBtn = modal.querySelector('#cancelTokenBtn');
+            let lastTestResult = null;
+            
+            const updateTestStatus = (status, message, type) => {
+                testStatus.style.display = 'block';
+                testStatus.className = `test-status ${type}`;
+                testStatus.innerHTML = message;
+                if (status === 'success') lastTestResult = true;
+                else if (status === 'error') lastTestResult = false;
+            };
+            
+            testBtn.onclick = async () => {
+                let token = input.value.trim();
+                if (!token) {
+                    updateTestStatus('error', '❌ 请输入 Token', 'error');
+                    return;
+                }
+                updateTestStatus('loading', '⏳ 正在检测中...', 'loading');
+                const result = await testGitHubToken(token);
+                if (result.valid) {
+                    updateTestStatus('success', `✅ Token 有效！用户: ${result.user}${result.repoWarning ? '\n⚠️ 仓库访问可能有问题，请确认仓库存在' : ''}`, 'success');
+                } else {
+                    updateTestStatus('error', `❌ Token 无效: ${result.error}`, 'error');
+                }
+            };
+            
+            confirmBtn.onclick = () => {
+                const token = input.value.trim();
+                if (token) {
+                    resolve(token);
+                } else {
+                    updateTestStatus('error', '❌ 请输入 Token', 'error');
+                }
+                modal.remove();
+            };
+            
+            cancelBtn.onclick = () => {
+                resolve(null);
+                modal.remove();
+            };
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') confirmBtn.click();
+            });
+            
+            input.focus();
+        });
+    }
+
     const DEFAULT_DATA = {
         blogTitle: "林间随笔",
         author: "林染秋",
@@ -90,7 +291,6 @@
     };
 
     let blogData = { ...DEFAULT_DATA };
-    let lastError = null;
 
     function showSaving(show) {
         const indicator = document.getElementById('savingIndicator');
@@ -98,6 +298,7 @@
     }
 
     function showToast(msg, bgColor = "#2c2a29") {
+        addLog(msg, bgColor === "#b55a3c" ? 'error' : 'success');
         const toast = document.createElement('div');
         toast.textContent = msg;
         toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2); max-width:90%; word-break:break-word;`;
@@ -118,9 +319,9 @@
         }
     }
 
-    // 获取文件信息（强制绕过缓存）
     async function getFileSha() {
         const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}&_=${Date.now()}`;
+        addLog(`获取文件: ${GITHUB_CONFIG.path}`, 'info');
         try {
             const res = await fetch(url, {
                 method: 'GET',
@@ -131,19 +332,22 @@
                 mode: 'cors',
                 credentials: 'omit'
             });
-            if (res.status === 404) return null;
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            if (res.status === 404) {
+                addLog(`文件不存在: ${GITHUB_CONFIG.path}`, 'warning');
+                return null;
             }
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             const data = await res.json();
+            addLog(`✅ 文件获取成功，SHA: ${data.sha.substring(0, 7)}...`, 'success');
             return { sha: data.sha, content: data.content };
         } catch (err) {
-            console.error('获取文件失败:', err);
+            addLog(`❌ 获取文件失败: ${err.message}`, 'error');
             throw err;
         }
     }
 
     async function loadFromGitHub() {
+        addLog('开始加载博客数据...', 'info');
         try {
             const file = await getFileSha();
             if (file && file.content) {
@@ -151,17 +355,17 @@
                 const json = JSON.parse(decoded);
                 blogData = { ...DEFAULT_DATA, ...json };
                 if (!blogData.articles) blogData.articles = [];
+                addLog(`✅ 数据加载成功，文章数: ${blogData.articles.length}`, 'success');
             } else {
-                // 文件不存在，创建默认数据（如果已有 token 则直接保存）
+                addLog('文件不存在，使用默认数据', 'warning');
                 if (githubToken) {
                     await saveToGitHub(DEFAULT_DATA);
+                    addLog('已创建默认数据文件', 'success');
                 }
                 blogData = { ...DEFAULT_DATA };
             }
         } catch (err) {
-            console.error("加载失败", err);
-            lastError = err;
-            showToast(`⚠️ 加载失败: ${err.message}`, "#b55a3c");
+            addLog(`❌ 加载失败: ${err.message}`, 'error');
             blogData = { ...DEFAULT_DATA };
         }
         renderFullBlog();
@@ -172,6 +376,7 @@
         if (isSaving) return false;
         isSaving = true;
         showSaving(true);
+        addLog('开始保存数据到 GitHub...', 'info');
         try {
             const jsonStr = JSON.stringify(data, null, 2);
             const content = btoa(unescape(encodeURIComponent(jsonStr)));
@@ -179,7 +384,7 @@
             try {
                 const file = await getFileSha();
                 if (file) sha = file.sha;
-            } catch (e) { /* 文件不存在则忽略 */ }
+            } catch (e) { addLog('文件不存在，将创建新文件', 'warning'); }
             const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
             const body = {
                 message: `更新博客数据 ${new Date().toLocaleString()}`,
@@ -207,10 +412,10 @@
                 } catch(e) {}
                 throw new Error(errorMsg);
             }
+            addLog(`✅ 保存成功！`, 'success');
             return true;
         } catch (err) {
-            console.error('保存失败:', err);
-            lastError = err;
+            addLog(`❌ 保存失败: ${err.message}`, 'error');
             throw err;
         } finally {
             isSaving = false;
@@ -234,7 +439,7 @@
         }
     }
 
-    // B站视频转换
+    // B站视频转换函数
     function convertToBilibiliEmbed(input) {
         if (!input) return null;
         let match;
@@ -311,6 +516,7 @@
         };
         blogData.articles.unshift(newArticle);
         saveAllData(true).then(() => renderFullBlog());
+        addLog(`添加文章: ${newArticle.title}`, 'info');
     }
 
     function editArticle(articleId) {
@@ -326,13 +532,16 @@
         if (newImage !== null) article.imageUrl = newImage.trim() || article.imageUrl;
         article.date = new Date().toISOString().slice(0, 10);
         saveAllData(true).then(() => renderFullBlog());
+        addLog(`编辑文章: ${article.title}`, 'info');
     }
 
     async function deleteArticle(articleId) {
         if (confirm("确定删除这篇文章吗？")) {
+            const article = blogData.articles.find(a => a.id === articleId);
             blogData.articles = blogData.articles.filter(a => a.id !== articleId);
             const success = await saveAllData(true);
             if (success) {
+                addLog(`删除文章: ${article?.title || articleId}`, 'info');
                 setTimeout(() => loadFromGitHub(), 500);
             } else {
                 renderFullBlog();
@@ -428,15 +637,26 @@
         }
     }
 
-    function enableEditMode() {
+    async function enableEditMode() {
         const pwd = prompt("🔑 管理员密码：", "");
-        if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
-        const token = prompt("🔧 请输入 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 Generate new token (classic)\n3. 勾选 repo 权限\n4. 生成并复制令牌（只显示一次）\n\n注意：令牌不要带空格，直接粘贴", "");
-        if (!token) { alert("未提供令牌，无法保存数据"); return false; }
+        if (pwd !== ADMIN_PASSWORD) { 
+            addLog('管理员密码错误', 'error');
+            alert("密码错误"); 
+            return false; 
+        }
+        addLog('密码验证通过', 'success');
+        
+        const token = await showTokenInputModal();
+        if (!token) {
+            addLog('用户取消 Token 输入', 'warning');
+            return false;
+        }
+        
         githubToken = token.trim();
         editMode = true;
-        loadFromGitHub();
+        await loadFromGitHub();
         showToast("✅ 编辑模式已开启，所有修改将保存到 GitHub 仓库", "#2c2a29");
+        addLog('编辑模式已开启', 'success');
         return true;
     }
 
@@ -445,17 +665,14 @@
         githubToken = null;
         renderFullBlog();
         showToast("🔒 已退出编辑模式", "#a18a6e");
+        addLog('编辑模式已关闭', 'info');
     }
 
     function onMasterControlClick() { editMode ? disableEditMode() : enableEditMode(); }
 
-    function showDebugInfo() {
-        const info = `Token 状态: ${githubToken ? '已设置' : '未设置'}\n编辑模式: ${editMode ? '开启' : '关闭'}\n上次错误: ${lastError ? lastError.message : '无'}\n仓库: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}\n文件: ${GITHUB_CONFIG.path}`;
-        alert(info);
-        console.log({ githubToken: !!githubToken, editMode, lastError, GITHUB_CONFIG });
-    }
-
     async function init() {
+        addLog('博客初始化开始', 'info');
+        addLog(`GitHub 仓库: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`, 'info');
         await loadFromGitHub();
         const btn = document.getElementById('masterControlBtn');
         if (btn) {
@@ -463,7 +680,8 @@
             btn.parentNode.replaceChild(newBtn, btn);
             newBtn.addEventListener('click', onMasterControlClick);
         }
-        document.getElementById('debugInfo')?.addEventListener('click', showDebugInfo);
+        document.getElementById('showLogBtn')?.addEventListener('click', showLogPanel);
+        addLog('博客加载完成', 'success');
     }
     init();
 </script>
