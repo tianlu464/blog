@@ -22,8 +22,8 @@
         .quote-author { margin-top: 0.8rem; text-align: right; font-weight: 500; color: #b48c5c; }
         .video-container { border-radius: 1rem; overflow: hidden; background: #1f1e1c; margin: 0.5rem 0; position: relative; padding-bottom: 56.25%; height: 0; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 0.75rem; }
-        .skills-list { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.8rem; }
-        .skill-tag { background: #e9e0d6; padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; }
+        .skills-list, .hobbies-list { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.8rem; }
+        .skill-tag, .hobby-tag { background: #e9e0d6; padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.85rem; color: #5a3f28; }
         .article-card { background: #fefcf8; border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #f1ebe3; position: relative; }
         .article-title { font-size: 1.5rem; font-weight: 600; color: #3b2e24; margin-bottom: 0.5rem; }
         .article-date { font-size: 0.75rem; color: #aa947c; margin-bottom: 0.8rem; }
@@ -71,7 +71,7 @@
     let editMode = false;
     let githubToken = null;
 
-    // 默认数据结构（手记模块预置内容已全部删除）
+    // 默认数据结构（添加了 hobbies 字段）
     const DEFAULT_DATA = {
         blogTitle: "林间随笔",
         author: "林染秋",
@@ -81,7 +81,8 @@
         quoteAuthor: "安塞尔·亚当斯",
         videoEmbed: "BV1GJ411x7h7",
         skills: "摄影, 散文写作, 前端开发, 徒步, 茶道",
-        articles: []  // 手记模块初始为空，无预置内容
+        hobbies: "阅读, 旅行, 音乐, 电影, 咖啡, 骑行",  // 新增个人喜好模块
+        articles: []
     };
 
     let blogData = { ...DEFAULT_DATA };
@@ -112,7 +113,7 @@
                 const json = JSON.parse(decoded);
                 blogData = { ...DEFAULT_DATA, ...json };
                 if (!blogData.articles) blogData.articles = [];
-                // 不再添加示例文章，保持空数组
+                if (!blogData.hobbies) blogData.hobbies = DEFAULT_DATA.hobbies; // 确保 hobbies 字段存在
             } else {
                 await saveToGitHub(DEFAULT_DATA);
                 blogData = { ...DEFAULT_DATA };
@@ -239,6 +240,7 @@
         else if (fieldKey === 'quoteAuthor') blogData.quoteAuthor = newValue;
         else if (fieldKey === 'videoEmbed') blogData.videoEmbed = newValue;
         else if (fieldKey === 'skills') blogData.skills = newValue;
+        else if (fieldKey === 'hobbies') blogData.hobbies = newValue;  // 新增喜好模块更新
         else return;
         saveAllData().then(() => renderFullBlog());
     }
@@ -286,9 +288,13 @@
         if (fieldKey === 'videoEmbed') { editVideoHandler(); return; }
         const current = blogData[fieldKey];
         let newVal;
-        if (fieldKey === 'skills') newVal = prompt(`编辑「${label}」\n用英文逗号分隔`, current);
-        else if (fieldKey === 'about') newVal = prompt(`编辑「${label}」`, current);
-        else newVal = prompt(`编辑「${label}」`, current);
+        if (fieldKey === 'skills' || fieldKey === 'hobbies') {
+            newVal = prompt(`编辑「${label}」\n用英文逗号分隔多个项目\n当前：${current}`, current);
+        } else if (fieldKey === 'about') {
+            newVal = prompt(`编辑「${label}」`, current);
+        } else {
+            newVal = prompt(`编辑「${label}」`, current);
+        }
         if (newVal !== null && newVal !== current) updateField(fieldKey, newVal);
     }
 
@@ -334,6 +340,18 @@
 
         const addBtnHtml = editMode ? `<div style="text-align:right; margin-bottom:1rem;"><button class="add-article-btn" id="addNewArticleBtn">➕ 添加新文章</button></div>` : '';
 
+        // 生成技能标签
+        const skillsArray = blogData.skills ? blogData.skills.split(',').map(s => s.trim()).filter(s => s) : [];
+        const skillsHtml = skillsArray.length > 0 
+            ? skillsArray.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')
+            : '<span style="color:#aa947c;">暂无技能</span>';
+        
+        // 生成喜好标签
+        const hobbiesArray = blogData.hobbies ? blogData.hobbies.split(',').map(h => h.trim()).filter(h => h) : [];
+        const hobbiesHtml = hobbiesArray.length > 0 
+            ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('')
+            : '<span style="color:#aa947c;">暂无喜好</span>';
+
         const html = `
             <div class="blog-header relative-edit">
                 <h1 class="blog-title">${escapeHtml(blogData.blogTitle)}</h1>
@@ -345,7 +363,10 @@
             <div class="grid-layout">
                 <div class="card relative-edit"><h2 class="section-title">🌄 灵感瞬间</h2><img class="featured-img" src="${escapeHtml(blogData.imageUrl)}" alt="feature" onerror="this.src='https://picsum.photos/id/106/800/500'">${editMode ? `<div class="edit-icon" data-edit-field="imageUrl" data-label="图片地址">✎ 换图</div>` : ''}</div>
                 <div class="card relative-edit"><h2 class="section-title">✨ 珍藏之言</h2><div class="quote-text">“ ${escapeHtml(blogData.quoteText)} ”</div><div class="quote-author">—— ${escapeHtml(blogData.quoteAuthor)}</div>${editMode ? `<div class="edit-icon" data-edit-field="quoteText" data-label="引语内容">✎ 引语</div><div class="edit-icon" style="top: 4rem;" data-edit-field="quoteAuthor" data-label="引语作者">✎ 作者</div>` : ''}</div>
-                <div class="card relative-edit"><h2 class="section-title">🧰 手边技艺</h2><div class="skills-list">${blogData.skills.split(',').map(s => `<span class="skill-tag">${escapeHtml(s.trim())}</span>`).join('')}</div>${editMode ? `<div class="edit-icon" data-edit-field="skills" data-label="技能列表(逗号分隔)">✎ 编辑技能</div>` : ''}</div>
+            </div>
+            <div class="grid-layout">
+                <div class="card relative-edit"><h2 class="section-title">🧰 手边技艺</h2><div class="skills-list">${skillsHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="skills" data-label="技能列表(逗号分隔)">✎ 编辑技能</div>` : ''}</div>
+                <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit"><h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2><div class="video-container" id="biliVideoContainer"></div><div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>${editMode ? `<div class="edit-icon" data-edit-field="videoEmbed" data-label="哔哩哔哩视频">✎ 更换B站视频</div>` : ''}</div></div>
         `;
