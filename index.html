@@ -46,6 +46,7 @@
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         .saving-indicator { position: fixed; top: 20px; right: 20px; background: #2c2a29; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .empty-articles { text-align: center; padding: 3rem; color: #aa947c; background: #fefcf8; border-radius: 1.5rem; border: 1px dashed #e4d9ce; }
+        .error-toast { position: fixed; bottom: 20px; left: 20px; background: #b55a3c; color: white; padding: 8px 18px; border-radius: 40px; font-size: 0.8rem; z-index: 999; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 90%; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -79,13 +80,13 @@
     const DEFAULT_DATA = {
         blogTitle: "林间随笔",
         author: "林染秋",
-        about: "独立创作者 / 前端开发者。喜欢在山野与代码之间漫游，记录思考、光影与日常。这里存放着文字、影像与不成熟的灵感。",
+        about: "你好呀，我是喜欢《罗小黑战记》的初中生，平时爱玩Minecraft，也喜欢看小说，有空可以一起交流～",
         imageUrl: "https://picsum.photos/id/104/800/500",
         quoteText: "我们不只是用相机拍照，我们带到摄影中去的是所有我们读过的书，看过的电影，听过的音乐，爱过的人。",
         quoteAuthor: "安塞尔·亚当斯",
         videoEmbed: "BV1GJ411x7h7",
         skills: "摄影, 散文写作, 前端开发, 徒步, 茶道",
-        articles: []  // 初始无内置文章
+        articles: []
     };
 
     let blogData = { ...DEFAULT_DATA };
@@ -93,6 +94,22 @@
     function showSaving(show) {
         const indicator = document.getElementById('savingIndicator');
         if (indicator) indicator.style.opacity = show ? '1' : '0';
+    }
+
+    function showErrorToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'error-toast';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function showToast(msg, bgColor) {
+        const toast = document.createElement('div');
+        toast.textContent = msg;
+        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 
     // 安全的 Base64 解码（支持 UTF-8）
@@ -107,16 +124,25 @@
     // 获取文件信息（强制绕过缓存）
     async function getFileSha() {
         const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?ref=${GITHUB_CONFIG.branch}&_=${Date.now()}`;
-        const res = await fetch(url, {
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache'
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
+                },
+                mode: 'cors'
+            });
+            if (res.status === 404) return null;
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
             }
-        });
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`获取文件失败: ${res.status}`);
-        const data = await res.json();
-        return { sha: data.sha, content: data.content };
+            const data = await res.json();
+            return { sha: data.sha, content: data.content };
+        } catch (err) {
+            console.error('获取文件失败:', err);
+            throw new Error(`无法连接GitHub API: ${err.message}`);
+        }
     }
 
     async function loadFromGitHub() {
@@ -129,22 +155,23 @@
                 if (!blogData.articles) blogData.articles = [];
             } else {
                 // 文件不存在，创建默认数据
-                await saveToGitHub(DEFAULT_DATA);
+                if (githubToken) {
+                    await saveToGitHub(DEFAULT_DATA);
+                }
                 blogData = { ...DEFAULT_DATA };
             }
         } catch (err) {
             console.error("加载失败，使用默认数据", err);
             blogData = { ...DEFAULT_DATA };
+            showErrorToast("⚠️ 加载失败: " + err.message);
         }
         renderFullBlog();
     }
 
     async function saveToGitHub(data) {
-        if (!githubToken) throw new Error("无令牌，请先登录管理员");
-        if (isSaving) {
-            console.log("正在保存中，跳过本次请求");
-            return false;
-        }
+        if (!githubToken) throw new Error("未提供令牌");
+        if (isSaving) return false;
+        
         isSaving = true;
         showSaving(true);
         
@@ -169,19 +196,28 @@
             const res = await fetch(url, {
                 method: 'PUT',
                 headers: { 
-                    'Authorization': `Bearer ${githubToken}`, 
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json',
                     'Cache-Control': 'no-cache'
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
+                mode: 'cors'
             });
             
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(`保存失败: ${err.message || res.status}`);
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const err = await res.json();
+                    errorMsg = err.message || errorMsg;
+                } catch(e) {}
+                throw new Error(errorMsg);
             }
             
             return true;
+        } catch (err) {
+            console.error('保存失败:', err);
+            throw err;
         } finally {
             isSaving = false;
             showSaving(false);
@@ -190,6 +226,10 @@
 
     async function saveAllData(showToastMsg = true) {
         if (!editMode) return false;
+        if (!githubToken) {
+            if (showToastMsg) showToast("❌ 未登录，请先点击管理员登录", "#b55a3c");
+            return false;
+        }
         try {
             await saveToGitHub(blogData);
             if (showToastMsg) showToast("✅ 数据已保存到 GitHub", "#2c2a29");
@@ -199,14 +239,6 @@
             if (showToastMsg) showToast("❌ 保存失败：" + err.message, "#b55a3c");
             return false;
         }
-    }
-
-    function showToast(msg, bgColor) {
-        const toast = document.createElement('div');
-        toast.textContent = msg;
-        toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
     }
 
     function escapeHtml(str) {
@@ -318,10 +350,7 @@
             blogData.articles = blogData.articles.filter(a => a.id !== articleId);
             const success = await saveAllData(true);
             if (success) {
-                // 保存成功后，延迟重新加载以确保数据完全同步
-                setTimeout(() => {
-                    loadFromGitHub();
-                }, 500);
+                setTimeout(() => loadFromGitHub(), 500);
             } else {
                 renderFullBlog();
             }
@@ -361,7 +390,6 @@
             badge.style.display = editMode ? "inline-block" : "none";
         }
 
-        // 生成文章列表 - 空状态显示友好提示
         let articlesHtml = '';
         if (blogData.articles && blogData.articles.length > 0) {
             blogData.articles.forEach(article => {
@@ -421,11 +449,12 @@
     function enableEditMode() {
         const pwd = prompt("🔑 管理员密码：", "");
         if (pwd !== ADMIN_PASSWORD) { alert("密码错误"); return false; }
-        const token = prompt("🔧 请输入 GitHub Personal Access Token (需 repo 权限)\n获取地址: https://github.com/settings/tokens", "");
+        const token = prompt("🔧 请输入 GitHub Personal Access Token\n\n获取步骤：\n1. 访问 https://github.com/settings/tokens\n2. 点击 Generate new token (classic)\n3. 勾选 repo 权限\n4. 生成并复制令牌", "");
         if (!token) { alert("未提供令牌，无法保存数据"); return false; }
         githubToken = token;
         editMode = true;
-        renderFullBlog();
+        // 重新加载数据以确保有最新内容
+        loadFromGitHub();
         showToast("✅ 编辑模式已开启，所有修改将保存到 GitHub 仓库", "#2c2a29");
         return true;
     }
