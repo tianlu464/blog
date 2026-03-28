@@ -1,19 +1,1 @@
-{
-  "blogTitle": "个人博客",
-  "author": "林染秋",
-  "about": "你好呀，我是喜欢《罗小黑战记》的初中生，平时爱玩Minecraft，也喜欢看《三体》之类的科幻小说，有空可以一起搭房子、聊剧情～",
-  "imageUrl": "https://i0.hdslb.com/bfs/article/ca66511684eb43babc17e0046eef9bc877557aef.jpg",
-  "quoteText": "我们不只是用相机拍照，我们带到摄影中去的是所有我们读过的书，看过的电影，听过的音乐，爱过的人。",
-  "quoteAuthor": "安塞尔·亚当斯",
-  "videoEmbed": "BV1BDWxzmEFH",
-  "skills": "摄影, 散文写作, 前端开发, 徒步, 茶道",
-  "articles": [
-    {
-      "id": "art2",
-      "title": "湖畔的冥想与迭代",
-      "content": "坐在湖边看水波荡漾，想起敏捷开发中的迭代。每一次涟漪都是新的版本，不必追求完美，但求持续进步。生活就像版本号，重要的不是终点，而是每次提交的用心。",
-      "date": "2025-03-20",
-      "imageUrl": "https://picsum.photos/id/30/800/500"
-    }
-  ]
 }
