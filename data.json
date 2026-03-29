@@ -12,9 +12,9 @@
   "backgroundImage": "https://img.cdn1.vip/i/69c93fed4434a_1774796781.webp",
   "articles": [
     {
-      "id": "1774799113542-pcbcg4",
+      "id": "1774799178950-jtee8q",
       "title": "新文章",
-      "content": "1",
+      "content": "",
       "date": "2026-03-29",
       "imageUrl": "https://picsum.photos/id/20/800/500"
     },
@@ -24,13 +24,6 @@
       "content": "你们知道吧",
       "date": "2026-03-28",
       "imageUrl": ""
-    },
-    {
-      "id": "1774723366112-whavxb",
-      "title": "我的QQ",
-      "content": "上面",
-      "date": "2026-03-28",
-      "imageUrl": "https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAESZLFpyCQ9BT7TBiZOu3T_T1wDHNKaBAACgiUAAqaPQVZiuirqaRZUZDoE.jpeg"
     }
   ]
 }
