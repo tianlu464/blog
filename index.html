@@ -207,13 +207,11 @@
         branch: 'main'
     };
     // ==================== Giscus 配置 ====================
-    // 使用 pathname 作为映射，每篇文章自动拥有独立评论区
     const GISCUS_CONFIG = {
         repo: 'Astroptis/blog',
         repoId: 'R_kgDORzSJcQ',
         category: 'Announcements',
         categoryId: 'DIC_kwDORzSJcc4C5hnP',
-        mapping: 'pathname',        // 根据页面路径自动区分不同文章的评论
         reactionsEnabled: '1',
         emitMetadata: '0',
         inputPosition: 'top',
@@ -238,7 +236,7 @@
         videoIntro: "📺 每周分享一部好电影或一段治愈影像 | 本期推荐：《山海之间》纪录片片段",
         skills: "摄影, 散文写作, 前端开发, 徒步, 茶道",
         hobbies: "阅读, 旅行, 音乐, 电影, 咖啡, 骑行",
-        backgroundImage: "",  // 背景图片 URL
+        backgroundImage: "",
         articles: []
     };
 
@@ -530,16 +528,15 @@
         }
     }
 
-    // 加载单篇文章的 Giscus 评论区
+    // 为单篇文章加载 Giscus 评论区
     function loadArticleComments(containerId, articleId) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        // 避免重复加载
-        if (container.querySelector('script')) return;
         
-        // 使用文章 ID 作为子路径，确保每篇文章有独立评论区
-        const discussionPath = `/article/${articleId}`;
+        // 清空容器，避免重复加载
+        container.innerHTML = '';
         
+        // 创建新的 script 元素
         const script = document.createElement('script');
         script.src = 'https://giscus.app/client.js';
         script.setAttribute('data-repo', GISCUS_CONFIG.repo);
@@ -547,7 +544,8 @@
         script.setAttribute('data-category', GISCUS_CONFIG.category);
         script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
         script.setAttribute('data-mapping', 'specific');
-        script.setAttribute('data-term', discussionPath);
+        // 使用文章 ID 作为唯一标识，确保每篇文章有独立评论区
+        script.setAttribute('data-term', `article_${articleId}`);
         script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
         script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
         script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
@@ -555,6 +553,7 @@
         script.setAttribute('data-lang', GISCUS_CONFIG.lang);
         script.setAttribute('crossorigin', 'anonymous');
         script.async = true;
+        
         container.appendChild(script);
     }
 
@@ -607,7 +606,7 @@
 
         let articlesHtml = '';
         if (blogData.articles && blogData.articles.length) {
-            blogData.articles.forEach((article, index) => {
+            blogData.articles.forEach((article) => {
                 const commentContainerId = `comments-${article.id}`;
                 articlesHtml += `
                     <div class="article-card relative-edit" data-article-id="${article.id}">
@@ -616,9 +615,8 @@
                         ${article.imageUrl ? `<img class="article-image" src="${escapeHtml(article.imageUrl)}" alt="cover" onerror="this.src='https://picsum.photos/id/104/800/500'">` : ''}
                         <div class="article-body">${escapeHtml(article.content).replace(/\n/g, '<br>')}</div>
                         ${editMode ? `<div class="article-actions"><button class="article-action-btn edit-article" data-id="${article.id}">✏️ 编辑</button><button class="article-action-btn delete" data-id="${article.id}">🗑️ 删除</button></div>` : ''}
-                        <!-- 文章评论区 -->
                         <div class="article-comments">
-                            <div class="comments-title">讨论区</div>
+                            <div class="comments-title">💬 讨论区</div>
                             <div id="${commentContainerId}" class="giscus"></div>
                         </div>
                     </div>
@@ -673,13 +671,15 @@
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
 
-        // 为每篇文章加载独立的评论区
-        if (blogData.articles && blogData.articles.length) {
-            blogData.articles.forEach(article => {
-                const commentContainerId = `comments-${article.id}`;
-                loadArticleComments(commentContainerId, article.id);
-            });
-        }
+        // 为每篇文章加载独立的评论区（延迟执行确保 DOM 已渲染）
+        setTimeout(() => {
+            if (blogData.articles && blogData.articles.length) {
+                blogData.articles.forEach(article => {
+                    const commentContainerId = `comments-${article.id}`;
+                    loadArticleComments(commentContainerId, article.id);
+                });
+            }
+        }, 100);
 
         if (editMode) {
             document.querySelectorAll('.edit-icon').forEach(icon => {
