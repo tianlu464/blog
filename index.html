@@ -361,7 +361,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
     </div>
 </div>
 
@@ -373,13 +373,26 @@
         path: 'data.json',
         branch: 'main'
     };
-    // ==================== Giscus 配置 ====================
-    const GISCUS_CONFIG = {
+    // ==================== Giscus 配置（全局留言板） ====================
+    const GISCUS_GLOBAL_CONFIG = {
         repo: 'Astroptis/blog',
         repoId: 'R_kgDORzSJcQ',
         category: 'Announcements',
         categoryId: 'DIC_kwDORzSJcc4C5hnP',
         mapping: 'pathname',
+        reactionsEnabled: '1',
+        emitMetadata: '0',
+        inputPosition: 'top',
+        theme: 'light',
+        lang: 'zh-CN'
+    };
+    // ==================== Giscus 配置（文章评论 - 使用特定 term） ====================
+    const GISCUS_COMMENT_CONFIG = {
+        repo: 'Astroptis/blog',
+        repoId: 'R_kgDORzSJcQ',
+        category: 'Announcements',
+        categoryId: 'DIC_kwDORzSJcc4C5hnP',
+        mapping: 'specific',
         reactionsEnabled: '1',
         emitMetadata: '0',
         inputPosition: 'top',
@@ -393,7 +406,7 @@
     const TOKEN_STORAGE_KEY = 'github_blog_token';
     let clickCount = 0;
     let clickTimer = null;
-    let currentView = 'list'; // 'list' 或 'detail'
+    let currentView = 'list';
     let currentArticleId = null;
 
     // 默认数据结构
@@ -751,22 +764,49 @@
         });
     }
 
-    function loadGiscus() {
-        const container = document.getElementById('giscusContainer');
+    // 加载文章评论（使用文章ID作为 term）
+    function loadArticleComments(containerId, articleId) {
+        const container = document.getElementById(containerId);
         if (!container) return;
         if (container.querySelector('script')) return;
+        
+        const term = `article-${articleId}`;
         const script = document.createElement('script');
         script.src = 'https://giscus.app/client.js';
-        script.setAttribute('data-repo', GISCUS_CONFIG.repo);
-        script.setAttribute('data-repo-id', GISCUS_CONFIG.repoId);
-        script.setAttribute('data-category', GISCUS_CONFIG.category);
-        script.setAttribute('data-category-id', GISCUS_CONFIG.categoryId);
-        script.setAttribute('data-mapping', GISCUS_CONFIG.mapping);
-        script.setAttribute('data-reactions-enabled', GISCUS_CONFIG.reactionsEnabled);
-        script.setAttribute('data-emit-metadata', GISCUS_CONFIG.emitMetadata);
-        script.setAttribute('data-input-position', GISCUS_CONFIG.inputPosition);
-        script.setAttribute('data-theme', GISCUS_CONFIG.theme);
-        script.setAttribute('data-lang', GISCUS_CONFIG.lang);
+        script.setAttribute('data-repo', GISCUS_COMMENT_CONFIG.repo);
+        script.setAttribute('data-repo-id', GISCUS_COMMENT_CONFIG.repoId);
+        script.setAttribute('data-category', GISCUS_COMMENT_CONFIG.category);
+        script.setAttribute('data-category-id', GISCUS_COMMENT_CONFIG.categoryId);
+        script.setAttribute('data-mapping', 'specific');
+        script.setAttribute('data-term', term);
+        script.setAttribute('data-reactions-enabled', GISCUS_COMMENT_CONFIG.reactionsEnabled);
+        script.setAttribute('data-emit-metadata', GISCUS_COMMENT_CONFIG.emitMetadata);
+        script.setAttribute('data-input-position', GISCUS_COMMENT_CONFIG.inputPosition);
+        script.setAttribute('data-theme', GISCUS_COMMENT_CONFIG.theme);
+        script.setAttribute('data-lang', GISCUS_COMMENT_CONFIG.lang);
+        script.setAttribute('crossorigin', 'anonymous');
+        script.async = true;
+        container.appendChild(script);
+    }
+
+    // 加载全局留言板
+    function loadGlobalGiscus() {
+        const container = document.getElementById('globalGiscusContainer');
+        if (!container) return;
+        if (container.querySelector('script')) return;
+        
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.setAttribute('data-repo', GISCUS_GLOBAL_CONFIG.repo);
+        script.setAttribute('data-repo-id', GISCUS_GLOBAL_CONFIG.repoId);
+        script.setAttribute('data-category', GISCUS_GLOBAL_CONFIG.category);
+        script.setAttribute('data-category-id', GISCUS_GLOBAL_CONFIG.categoryId);
+        script.setAttribute('data-mapping', GISCUS_GLOBAL_CONFIG.mapping);
+        script.setAttribute('data-reactions-enabled', GISCUS_GLOBAL_CONFIG.reactionsEnabled);
+        script.setAttribute('data-emit-metadata', GISCUS_GLOBAL_CONFIG.emitMetadata);
+        script.setAttribute('data-input-position', GISCUS_GLOBAL_CONFIG.inputPosition);
+        script.setAttribute('data-theme', GISCUS_GLOBAL_CONFIG.theme);
+        script.setAttribute('data-lang', GISCUS_GLOBAL_CONFIG.lang);
         script.setAttribute('crossorigin', 'anonymous');
         script.async = true;
         container.appendChild(script);
@@ -777,8 +817,6 @@
         const container = document.getElementById('blogRoot');
         if (!container) return;
 
-        const excerpt = article.content.length > 200 ? article.content.substring(0, 200) + '...' : article.content;
-        
         const html = `
             <div class="detail-container">
                 <button class="back-btn" id="backToListBtn">← 返回列表</button>
@@ -799,9 +837,9 @@
                     ` : ''}
                 </div>
                 <div class="card full-width" style="margin-top: 2rem;">
-                    <h2 class="section-title">💬 留言讨论</h2>
-                    <div id="giscusContainer" class="giscus"></div>
-                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可留言，所有评论将存储于仓库的 Discussions 中</div>
+                    <h2 class="section-title">💬 文章评论</h2>
+                    <div id="articleCommentsContainer" class="giscus"></div>
+                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可评论，所有评论将存储于仓库的 Discussions 中</div>
                 </div>
             </div>
         `;
@@ -818,6 +856,9 @@
             });
         }
 
+        // 加载文章评论
+        loadArticleComments('articleCommentsContainer', article.id);
+
         // 绑定编辑按钮
         if (editMode) {
             const editBtn = document.querySelector('.edit-article');
@@ -827,8 +868,6 @@
             const deleteBtn = document.querySelector('.delete');
             if (deleteBtn) deleteBtn.addEventListener('click', (e) => deleteArticle(article.id));
         }
-
-        loadGiscus();
     }
 
     // 渲染列表页
@@ -901,7 +940,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesHtml}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 哔哩哔哩 · 影像诗</h2>
+                <h2 class="section-title">🎬 一些好看的视频</h2>
                 ${videoIntroHtml ? `<div class="video-intro">${escapeHtml(videoIntroHtml)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
@@ -910,9 +949,9 @@
             </div></div>
             <div class="grid-layout">
                 <div class="card full-width">
-                    <h2 class="section-title">💬 留言板</h2>
-                    <div id="giscusContainer" class="giscus"></div>
-                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可留言，所有评论将存储于仓库的 Discussions 中</div>
+                    <h2 class="section-title">💬 全局留言板</h2>
+                    <div id="globalGiscusContainer" class="giscus"></div>
+                    <div style="font-size:0.7rem; color:#aa947c; text-align:center; margin-top:0.8rem;">✨ 使用 GitHub 账号登录即可留言，欢迎分享您的想法和建议</div>
                 </div>
             </div>
         `;
@@ -922,7 +961,10 @@
         const videoContainer = document.getElementById('biliVideoContainer');
         if (videoContainer) videoContainer.innerHTML = getVideoEmbedCode();
 
-        // 绑定文章点击事件（阅读全文）
+        // 加载全局留言板
+        loadGlobalGiscus();
+
+        // 绑定文章点击事件
         document.querySelectorAll('.read-more').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -936,10 +978,8 @@
             });
         });
 
-        // 绑定卡片点击（可选，点击卡片任何区域也可进入详情）
         document.querySelectorAll('.article-card').forEach(card => {
             card.addEventListener('click', (e) => {
-                // 避免点击按钮时触发
                 if (e.target.classList.contains('article-action-btn') || 
                     e.target.classList.contains('read-more') ||
                     e.target.closest('.article-actions')) return;
@@ -952,8 +992,6 @@
                 }
             });
         });
-
-        loadGiscus();
 
         if (editMode) {
             document.querySelectorAll('.edit-icon').forEach(icon => {
