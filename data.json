@@ -1,1 +1,31 @@
-
+{
+  "blogTitle": "个人网站",
+  "author": "Astroptis",
+  "about": "你好呀，我是喜欢《罗小黑战记》的初中生，平时爱玩Minecraft，也喜欢看《三体》之类的科幻小说，有空可以一起搭房子、聊剧情～",
+  "imageUrl": "https://img.cdn1.vip/i/69c93fed4434a_1774796781.webp",
+  "quoteText": "给岁月以文明，而不是给文明以岁月",
+  "quoteAuthor": "《三体》",
+  "videoEmbed": "BV1BDWxzmEFH",
+  "videoIntro": "兄弟们，这个视频也是非常的好看，你们知道吧",
+  "skills": "玩Minecraft",
+  "hobbies": "玩Minecraft, 看罗小黑战记, 看一些科幻小说",
+  "backgroundImage": "https://img.cdn1.vip/i/69ca828bd4e74_1774879371.webp",
+  "articles": [
+    {
+      "id": "1774886061308-rj0lza",
+      "title": "1",
+      "content": "",
+      "date": "2026-03-30",
+      "imageUrl": "",
+      "pinned": false
+    },
+    {
+      "id": "1774882716562-cbovu1",
+      "title": "AI太好用了",
+      "content": "你们知道吧",
+      "date": "2026-03-30",
+      "imageUrl": "",
+      "pinned": false
+    }
+  ]
+}
