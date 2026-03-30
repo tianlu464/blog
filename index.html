@@ -361,6 +361,71 @@
             background: #ddd0c2;
         }
         
+        /* 自定义模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #3e2c21;
+            margin-bottom: 1rem;
+            border-left: 4px solid #c7a66b;
+            padding-left: 0.8rem;
+        }
+        .modal-input, .modal-textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #e4d9ce;
+            border-radius: 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .modal-textarea { min-height: 120px; resize: vertical; }
+        .modal-input:focus, .modal-textarea:focus {
+            outline: none;
+            border-color: #c7a66b;
+            box-shadow: 0 0 0 2px rgba(199, 166, 107, 0.2);
+        }
+        .modal-buttons { display: flex; gap: 0.8rem; justify-content: flex-end; }
+        .modal-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .modal-btn.confirm { background: #c7a66b; color: white; }
+        .modal-btn.confirm:hover { background: #b58a4a; transform: scale(0.98); }
+        .modal-btn.cancel { background: #e9e0d6; color: #5a3f28; }
+        .modal-btn.cancel:hover { background: #ddd0c2; }
+        .modal-hint { font-size: 0.75rem; color: #aa947c; margin-bottom: 1rem; }
+        
         .giscus-frame, .giscus { background: transparent !important; }
     </style>
 </head>
@@ -418,7 +483,7 @@
     let currentView = 'list';
     let currentArticleId = null;
 
-    let blogData = { ...DEFAULT_DATA };
+    // ==================== 默认数据结构（必须在 blogData 之前定义） ====================
     const DEFAULT_DATA = {
         blogTitle: "Astroptis",
         author: "林染秋",
@@ -433,6 +498,8 @@
         backgroundImage: "",
         articles: []
     };
+
+    let blogData = { ...DEFAULT_DATA };
 
     // ==================== 确认对话框 ====================
     function showConfirm(title, message, onConfirm) {
@@ -842,7 +909,6 @@
     // 编辑函数（增量更新）
     function updateField(fieldKey, newValue) {
         if (newValue === null) return;
-        const oldValue = blogData[fieldKey];
         if (fieldKey === 'blogTitle') blogData.blogTitle = newValue;
         else if (fieldKey === 'author') blogData.author = newValue;
         else if (fieldKey === 'about') blogData.about = newValue;
@@ -860,7 +926,7 @@
         
         // 增量更新 DOM
         if (fieldKey === 'blogTitle') updateElementText('.blog-title', newValue);
-        else if (fieldKey === 'author') updateElementText('.blog-author', newValue.replace('✍️ ', ''));
+        else if (fieldKey === 'author') updateElementText('.blog-author', '✍️ ' + newValue);
         else if (fieldKey === 'about') {
             const aboutEl = document.querySelector('.card.full-width p');
             if (aboutEl) aboutEl.innerHTML = escapeHtml(newValue).replace(/\n/g, '<br>');
@@ -1196,8 +1262,7 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>'}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 
-一些好看的视频</h2>
+                <h2 class="section-title">🎬 一些好看的视频</h2>
                 ${blogData.videoIntro ? `<div class="video-intro">${escapeHtml(blogData.videoIntro)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
@@ -1303,7 +1368,9 @@
 
     async function init() {
         await loadFromGitHub();
-        document.getElementById('blogHeader')?.addEventListener('click', onTitleClick);
+        const header = document.getElementById('blogHeader');
+        if (header) header.addEventListener('click', onTitleClick);
+        else setTimeout(() => { const h = document.getElementById('blogHeader'); if (h) h.addEventListener('click', onTitleClick); }, 500);
     }
     init();
 </script>
