@@ -10,5 +10,14 @@
   "skills": "玩Minecraft",
   "hobbies": "玩Minecraft, 看罗小黑战记, 看一些科幻小说",
   "backgroundImage": "https://img.cdn1.vip/i/69ca828bd4e74_1774879371.webp",
-  "articles": []
+  "articles": [
+    {
+      "id": "1774882716562-cbovu1",
+      "title": "AI太好用了",
+      "content": "你们知道吧",
+      "date": "2026-03-30",
+      "imageUrl": "https://picsum.photos/id/26/800/500",
+      "pinned": false
+    }
+  ]
 }
