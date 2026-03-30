@@ -295,8 +295,8 @@
         button { background: none; border: none; cursor: pointer; }
         .loading { text-align: center; padding: 3rem; color: #aa9b8c; }
         
-        /* 自定义模态框样式 */
-        .modal-overlay {
+        /* 确认对话框样式 */
+        .confirm-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -310,83 +310,25 @@
             justify-content: center;
             animation: fadeIn 0.2s ease;
         }
-        .modal-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-        }
-        .modal-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #3e2c21;
-            margin-bottom: 1rem;
-            border-left: 4px solid #c7a66b;
-            padding-left: 0.8rem;
-        }
-        .modal-input, .modal-textarea {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #e4d9ce;
-            border-radius: 1rem;
-            font-family: inherit;
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.9);
-            margin-bottom: 1rem;
-            transition: all 0.2s;
-        }
-        .modal-textarea { min-height: 120px; resize: vertical; }
-        .modal-input:focus, .modal-textarea:focus {
-            outline: none;
-            border-color: #c7a66b;
-            box-shadow: 0 0 0 2px rgba(199, 166, 107, 0.2);
-        }
-        .modal-buttons { display: flex; gap: 0.8rem; justify-content: flex-end; }
-        .modal-btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 2rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-        .modal-btn.confirm { background: #c7a66b; color: white; }
-        .modal-btn.confirm:hover { background: #b58a4a; transform: scale(0.98); }
-        .modal-btn.cancel { background: #e9e0d6; color: #5a3f28; }
-        .modal-btn.cancel:hover { background: #ddd0c2; }
-        .modal-hint { font-size: 0.75rem; color: #aa947c; margin-bottom: 1rem; }
-        
-        /* 简单确认对话框样式 */
-        .confirm-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
         .confirm-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(16px);
             border-radius: 1.5rem;
             padding: 1.5rem;
-            max-width: 350px;
+            max-width: 400px;
             width: 90%;
-            text-align: center;
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            text-align: center;
+        }
+        .confirm-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #3e2c21;
+            margin-bottom: 1rem;
         }
         .confirm-message {
-            font-size: 1rem;
-            color: #3e2c21;
+            color: #6b5a4a;
             margin-bottom: 1.5rem;
             line-height: 1.5;
         }
@@ -396,19 +338,20 @@
             justify-content: center;
         }
         .confirm-btn {
-            padding: 0.5rem 1.2rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 2rem;
             font-weight: 500;
             cursor: pointer;
-            border: none;
             transition: all 0.2s;
+            border: none;
         }
         .confirm-btn.confirm {
-            background: #b55a3c;
+            background: #c7a66b;
             color: white;
         }
         .confirm-btn.confirm:hover {
-            background: #9b4a2e;
+            background: #b58a4a;
+            transform: scale(0.98);
         }
         .confirm-btn.cancel {
             background: #e9e0d6;
@@ -428,7 +371,7 @@
         <div class="blog-content" id="blogRoot">
             <div class="loading">加载中...</div>
         </div>
-        <footer>© Astroptis · 数据存储于 GitHub 仓库 | 留言板由 Giscus 提供</footer>
+        <footer>© Astroptis · 数据存储于 GitHub 仓库</footer>
     </div>
 </div>
 
@@ -491,6 +434,50 @@
         articles: []
     };
 
+    // ==================== 确认对话框 ====================
+    function showConfirm(title, message, onConfirm) {
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+        
+        const container = document.createElement('div');
+        container.className = 'confirm-container';
+        
+        const titleEl = document.createElement('div');
+        titleEl.className = 'confirm-title';
+        titleEl.textContent = title;
+        container.appendChild(titleEl);
+        
+        const messageEl = document.createElement('div');
+        messageEl.className = 'confirm-message';
+        messageEl.textContent = message;
+        container.appendChild(messageEl);
+        
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'confirm-buttons';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'confirm-btn confirm';
+        confirmBtn.textContent = '确定';
+        confirmBtn.onclick = () => {
+            overlay.remove();
+            onConfirm(true);
+        };
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'confirm-btn cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => {
+            overlay.remove();
+            onConfirm(false);
+        };
+        
+        buttonsDiv.appendChild(confirmBtn);
+        buttonsDiv.appendChild(cancelBtn);
+        container.appendChild(buttonsDiv);
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+    }
+
     // ==================== 辅助函数 ====================
     function escapeHtml(str) {
         if (!str) return '';
@@ -508,39 +495,6 @@
         toast.style.cssText = `position:fixed; bottom:20px; left:20px; background:${bgColor}; color:white; padding:8px 18px; border-radius:40px; font-size:0.8rem; z-index:1001; box-shadow:0 2px 10px rgba(0,0,0,0.2);`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
-    }
-
-    // 简单确认对话框（替代原来的输入确认）
-    function showConfirm(message, onConfirm) {
-        const overlay = document.createElement('div');
-        overlay.className = 'confirm-overlay';
-        const container = document.createElement('div');
-        container.className = 'confirm-container';
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'confirm-message';
-        msgDiv.textContent = message;
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.className = 'confirm-buttons';
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'confirm-btn confirm';
-        confirmBtn.textContent = '确定';
-        confirmBtn.onclick = () => {
-            overlay.remove();
-            onConfirm(true);
-        };
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'confirm-btn cancel';
-        cancelBtn.textContent = '取消';
-        cancelBtn.onclick = () => {
-            overlay.remove();
-            onConfirm(false);
-        };
-        buttonsDiv.appendChild(confirmBtn);
-        buttonsDiv.appendChild(cancelBtn);
-        container.appendChild(msgDiv);
-        container.appendChild(buttonsDiv);
-        overlay.appendChild(container);
-        document.body.appendChild(overlay);
     }
 
     function showModal(title, value, type, callback) {
@@ -765,13 +719,19 @@
     function handlePinArticle(e) {
         e.stopPropagation();
         const id = e.currentTarget.getAttribute('data-id');
-        togglePinArticle(id);
+        const article = blogData.articles.find(a => a.id === id);
+        const action = article?.pinned ? '取消置顶' : '置顶';
+        showConfirm('确认操作', `确定要${action}这篇文章吗？`, (confirmed) => {
+            if (confirmed) togglePinArticle(id);
+        });
     }
 
     function handleDeleteArticle(e) {
         e.stopPropagation();
         const id = e.currentTarget.getAttribute('data-id');
-        deleteArticle(id);
+        showConfirm('确认删除', '确定要删除这篇文章吗？删除后无法恢复。', (confirmed) => {
+            if (confirmed) deleteArticle(id);
+        });
     }
 
     // GitHub API 函数
@@ -882,6 +842,7 @@
     // 编辑函数（增量更新）
     function updateField(fieldKey, newValue) {
         if (newValue === null) return;
+        const oldValue = blogData[fieldKey];
         if (fieldKey === 'blogTitle') blogData.blogTitle = newValue;
         else if (fieldKey === 'author') blogData.author = newValue;
         else if (fieldKey === 'about') blogData.about = newValue;
@@ -1023,7 +984,7 @@
         container.appendChild(script);
     }
 
-    // 文章操作（增量更新）
+    // 文章操作
     function addArticle() {
         showModal('📝 添加新文章', '', 'textarea', (title) => {
             if (!title) return;
@@ -1053,11 +1014,11 @@
     function editArticle(articleId) {
         const article = blogData.articles.find(a => a.id === articleId);
         if (!article) return;
-        showModal('✏️ 编辑文章', article.title, 'textarea', (newTitle) => {
+        showModal('✏️ 编辑标题', article.title, 'text', (newTitle) => {
             if (newTitle === null) return;
             showModal('✏️ 编辑正文', article.content, 'textarea', (newContent) => {
                 if (newContent === null) return;
-                showModal('🖼️ 封面图片URL', article.imageUrl || '留空则不显示图片', 'text', (newImage) => {
+                showModal('🖼️ 编辑图片URL', article.imageUrl || '留空则不显示图片', 'text', (newImage) => {
                     let finalImageUrl = article.imageUrl;
                     if (newImage !== null) {
                         if (newImage.trim() === '' || newImage.trim() === '留空则不显示图片') finalImageUrl = '';
@@ -1073,7 +1034,6 @@
                         } else if (currentView === 'list') {
                             updateArticleInList(articleId, article);
                         }
-                        showToast("✅ 文章已更新", "#2c2a29");
                     });
                 });
             });
@@ -1081,20 +1041,15 @@
     }
 
     function deleteArticle(articleId) {
-        showConfirm('确定要删除这篇文章吗？', (confirmed) => {
-            if (confirmed) {
-                blogData.articles = blogData.articles.filter(a => a.id !== articleId);
-                saveAllData().then(() => {
-                    if (currentView === 'detail' && currentArticleId === articleId) {
-                        currentView = 'list';
-                        currentArticleId = null;
-                        renderListView();
-                    } else if (currentView === 'list') {
-                        const card = document.querySelector(`.article-card[data-id="${articleId}"]`);
-                        if (card) card.remove();
-                    }
-                    showToast("✅ 文章已删除", "#2c2a29");
-                });
+        blogData.articles = blogData.articles.filter(a => a.id !== articleId);
+        saveAllData().then(() => {
+            if (currentView === 'detail' && currentArticleId === articleId) {
+                currentView = 'list';
+                currentArticleId = null;
+                renderListView();
+            } else if (currentView === 'list') {
+                const card = document.querySelector(`.article-card[data-id="${articleId}"]`);
+                if (card) card.remove();
             }
         });
     }
@@ -1153,8 +1108,16 @@
         loadArticleComments('articleCommentsContainer', article.id);
         if (editMode) {
             document.querySelector('.edit-article')?.addEventListener('click', () => editArticle(article.id));
-            document.querySelector('.pin, .unpin')?.addEventListener('click', () => togglePinArticle(article.id));
-            document.querySelector('.delete')?.addEventListener('click', () => deleteArticle(article.id));
+            document.querySelector('.pin, .unpin')?.addEventListener('click', () => {
+                showConfirm('确认操作', `确定要${article.pinned ? '取消置顶' : '置顶'}这篇文章吗？`, (confirmed) => {
+                    if (confirmed) togglePinArticle(article.id);
+                });
+            });
+            document.querySelector('.delete')?.addEventListener('click', () => {
+                showConfirm('确认删除', '确定要删除这篇文章吗？删除后无法恢复。', (confirmed) => {
+                    if (confirmed) deleteArticle(article.id);
+                });
+            });
         }
     }
 
@@ -1233,7 +1196,8 @@
                 <div class="card relative-edit"><h2 class="section-title">❤️ 个人喜好</h2><div class="hobbies-list">${hobbiesArray.length ? hobbiesArray.map(h => `<span class="hobby-tag">${escapeHtml(h)}</span>`).join('') : '<span style="color:#aa947c;">暂无喜好</span>'}</div>${editMode ? `<div class="edit-icon" data-edit-field="hobbies" data-label="喜好列表(逗号分隔)">✎ 编辑喜好</div>` : ''}</div>
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit">
-                <h2 class="section-title">🎬 一些好看的视频</h2>
+                <h2 class="section-title">🎬 
+一些好看的视频</h2>
                 ${blogData.videoIntro ? `<div class="video-intro">${escapeHtml(blogData.videoIntro)}</div>` : ''}
                 <div class="video-container" id="biliVideoContainer"></div>
                 <div class="bili-tip">💡 管理员登录后点击右上角铅笔更换 B站视频</div>
