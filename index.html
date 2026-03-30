@@ -212,14 +212,6 @@
         }
         .blog-title:hover { transform: scale(1.02); }
         .blog-author { font-size: 1.1rem; color: #5a4a3a; font-weight: 500; }
-        .click-hint {
-            font-size: 0.7rem;
-            color: #aa947c;
-            margin-top: 0.5rem;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        .blog-header:hover .click-hint { opacity: 1; }
         
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
         .full-width { grid-column: 1 / -1; }
@@ -247,7 +239,7 @@
         .video-intro { font-size: 0.9rem; color: #6b5a4a; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(249, 244, 238, 0.6); backdrop-filter: blur(4px); border-radius: 0.75rem; text-align: center; }
         .giscus { margin-top: 1rem; }
         
-        /* 管理栏样式 - 恢复按钮显示 */
+        /* 管理栏样式 */
         .admin-bar { 
             display: flex; 
             justify-content: flex-end; 
@@ -719,7 +711,6 @@
             showModal('📝 文章正文', '', 'textarea', (content) => {
                 if (content === null) return;
                 showModal('🖼️ 封面图片URL', '留空则不显示图片', 'text', (imageUrl) => {
-                    // 修复1：如果图片URL为空或只有空格，则不存储图片URL
                     let finalImageUrl = '';
                     if (imageUrl && imageUrl.trim() && imageUrl.trim() !== '留空则不显示图片') {
                         finalImageUrl = imageUrl.trim();
@@ -939,39 +930,31 @@
 
         document.title = blogData.blogTitle + " | GitHub 博客";
 
-        // 修复2：恢复管理栏按钮（在编辑模式下显示）
+        // 管理栏按钮
         const adminBar = document.getElementById('adminBar');
         if (adminBar) {
             adminBar.innerHTML = '';
             if (editMode) {
-                // 退出编辑模式按钮
                 const exitBtn = document.createElement('button');
                 exitBtn.className = 'admin-btn';
                 exitBtn.textContent = '✏️ 退出编辑模式';
                 exitBtn.onclick = disableEditMode;
                 adminBar.appendChild(exitBtn);
                 
-                // 更换 Token 按钮
                 const tokenBtn = document.createElement('button');
                 tokenBtn.className = 'token-btn';
                 tokenBtn.textContent = '🔑 更换 Token';
                 tokenBtn.onclick = updateToken;
                 adminBar.appendChild(tokenBtn);
                 
-                // 更换背景按钮
                 const bgBtn = document.createElement('button');
                 bgBtn.className = 'bg-setting-btn';
                 bgBtn.textContent = '🎨 更换背景';
                 bgBtn.onclick = editBackgroundHandler;
                 adminBar.appendChild(bgBtn);
             } else {
-                // 非编辑模式显示登录提示（但实际登录通过点击标题触发）
-                const hintBtn = document.createElement('button');
-                hintBtn.className = 'admin-btn';
-                hintBtn.textContent = '✨ 点击标题5次登录';
-                hintBtn.style.background = 'rgba(127, 94, 60, 0.7)';
-                hintBtn.onclick = () => showToast('点击博客标题 5 次进入编辑模式', '#aa947c');
-                adminBar.appendChild(hintBtn);
+                // 非编辑模式显示空管理栏（无提示文字）
+                // 留空即可，用户通过点击标题5次登录
             }
         }
 
@@ -986,7 +969,6 @@
                 const pinnedClass = article.pinned ? 'pinned' : '';
                 const pinnedBadge = article.pinned ? '<span class="pinned-badge">📌 置顶</span>' : '';
                 const excerpt = article.content.length > 150 ? article.content.substring(0, 150) + '...' : article.content;
-                // 修复1：只有 imageUrl 存在时才显示图片
                 const imageHtml = article.imageUrl ? `<img class="article-image" src="${escapeHtml(article.imageUrl)}" alt="cover" onerror="this.style.display='none'">` : '';
                 articlesHtml += `
                     <div class="article-card ${pinnedClass} relative-edit" data-id="${article.id}">
@@ -1026,7 +1008,6 @@
             <div class="blog-header relative-edit" id="blogHeader">
                 <h1 class="blog-title">${escapeHtml(blogData.blogTitle)}</h1>
                 <p class="blog-author">✍️ ${escapeHtml(blogData.author)}</p>
-                <div class="click-hint">✨ 点击标题 5 次进入编辑模式</div>
                 ${editMode ? `<div class="edit-icon" data-edit-field="blogTitle" data-label="博客标题">✎ 标题</div><div class="edit-icon" style="top:3.2rem;" data-edit-field="author" data-label="作者名称">✎ 作者</div>` : ''}
             </div>
             <div class="grid-layout"><div class="card full-width relative-edit"><h2 class="section-title">📖 关于我</h2><p style="white-space: pre-wrap;">${escapeHtml(blogData.about)}</p>${editMode ? `<div class="edit-icon" data-edit-field="about" data-label="关于我内容">✎ 编辑</div>` : ''}</div></div>
